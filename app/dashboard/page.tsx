@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { 
   LineChart, Line, AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell,
   BarChart, Bar
 } from 'recharts';
+import DashboardSkeleton from '../components/DashboardSkeleton';
 
 // Sample data for network activity
 const networkData = Array.from({ length: 24 }, (_, i) => ({
@@ -36,9 +37,14 @@ const trafficByRegion = Array.from({ length: 12 }, (_, i) => ({
 
 export default function Dashboard() {
   const [data, setData] = useState(networkData);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Simulate real-time updates
   useEffect(() => {
+    // Simulate loading delay
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 1500);
+
     const interval = setInterval(() => {
       setData(prev => {
         const newData = [...prev.slice(1)];
@@ -52,8 +58,15 @@ export default function Dashboard() {
       });
     }, 3000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timer);
+    };
   }, []);
+
+  if (isLoading) {
+    return <DashboardSkeleton />;
+  }
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8">
