@@ -101,7 +101,7 @@ export default function Earth() {
 					function zoomAnimation() {
 						const elapsed = Date.now() - startTime;
 						const progress = Math.min(elapsed / duration, 1);
-						
+
 						// Ease out cubic
 						const easing = 1 - Math.pow(1 - progress, 3);
 
@@ -122,7 +122,7 @@ export default function Earth() {
 							requestAnimationFrame(zoomAnimation);
 						} else {
 							// Animation complete, navigate to dashboard
-							router.push('/dashboard');
+							router.push("/dashboard");
 						}
 					}
 
@@ -133,12 +133,16 @@ export default function Earth() {
 			lastClickTime = currentTime;
 		};
 
-		renderer.domElement.addEventListener('click', handleClick);
+		renderer.domElement.addEventListener("click", handleClick);
 
 		// Create globe
 		const Globe = new ThreeGlobe()
-			.globeImageUrl("/textures/earth-map.jpg")
-			.bumpImageUrl("/textures/earth-bump.jpg")
+			.globeImageUrl(
+				"https://image-static.segmentfault.com/142/585/1425851602-60dd9cfe309dd",
+			)
+			.bumpImageUrl(
+				"https://image-static.segmentfault.com/332/688/3326882554-675dbbedd1cd0",
+			)
 			.atmosphereColor("#1da1f2")
 			.atmosphereAltitude(0.2)
 			.arcColor((e: any) => e.color)
@@ -149,8 +153,6 @@ export default function Earth() {
 			.arcDashInitialGap(1)
 			.arcDashAnimateTime(3000);
 
-		// Add globe to scene
-		// @ts-ignore (three-globe types are not complete)
 		scene.add(Globe);
 
 		// Add lights
