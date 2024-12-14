@@ -230,7 +230,6 @@ export default function Earth() {
 				clearInterval(arcIntervalRef.current);
 			}
 			renderer.dispose();
-			controls.dispose();
 		};
 	}, []);
 
