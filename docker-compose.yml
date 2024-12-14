@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  earth-3d:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: earth-3d
+    ports:
+      - "8000:3000"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    volumes:
+      - ./public:/app/public  # 挂载静态资源目录
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
