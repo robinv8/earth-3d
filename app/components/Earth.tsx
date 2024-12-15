@@ -36,6 +36,21 @@ interface Airport {
 export default function Earth() {
 	const router = useRouter();
 	const globeVizRef = useRef<HTMLDivElement>(null);
+	const transitionRef = useRef<boolean>(false);
+
+	const handleTransition = () => {
+		if (transitionRef.current || !globeVizRef.current) return;
+		transitionRef.current = true;
+
+		const globeEl = globeVizRef.current;
+		globeEl.style.transition = 'transform 1s ease-in, opacity 1s ease-in';
+		globeEl.style.transform = 'scale(2)';
+		globeEl.style.opacity = '0';
+
+		setTimeout(() => {
+			router.push("/dashboard");
+		}, 1000);
+	};
 
 	useEffect(() => {
 		if (!globeVizRef.current) return;
@@ -47,9 +62,8 @@ export default function Earth() {
 			.globeImageUrl("https://image-static.segmentfault.com/142/585/1425851602-60dd9cfe309dd")
 			.pointOfView({ lat: 35, lng: 105, altitude: 2 }) // aim at China centroid
 
-			.onGlobeClick(() => {
-				router.push("/dashboard");
-			})
+			.onGlobeClick(handleTransition)
+			.onArcClick(handleTransition)
 
 			.arcLabel((d) => `${d.airline}: ${d.srcIata} &#8594; ${d.dstIata}`)
 			.arcStartLat((d) => +d.srcAirport.lat)
@@ -168,7 +182,11 @@ export default function Earth() {
 		<div
 			id="globeViz"
 			ref={globeVizRef}
-			style={{ width: "100%", height: "100vh" }}
+			style={{
+				width: "100%",
+				height: "100vh",
+				transition: "transform 1s ease-in, opacity 1s ease-in"
+			}}
 		/>
 	);
 }
