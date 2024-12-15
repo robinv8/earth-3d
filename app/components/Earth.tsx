@@ -56,7 +56,7 @@ export default function Earth() {
 			.arcStartLng((d) => +d.srcAirport.lng)
 			.arcEndLat((d) => +d.dstAirport.lat)
 			.arcEndLng((d) => +d.dstAirport.lng)
-			.arcDashLength(0.25)
+			.arcDashLength(0.1)
 			.arcDashGap(1)
 			.arcDashInitialGap(() => Math.random())
 			.arcDashAnimateTime(4000)
@@ -64,6 +64,7 @@ export default function Earth() {
 				`rgba(0, 255, 0, ${OPACITY})`,
 				`rgba(255, 0, 0, ${OPACITY})`,
 			])
+      .arcStroke(0.3)
 			.arcsTransitionDuration(0)
 
 			.pointColor(() => "orange")
