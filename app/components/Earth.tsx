@@ -44,8 +44,12 @@ export default function Earth() {
 
 		const myGlobe = new Globe(globeVizRef.current)
 
-			.globeImageUrl("//unpkg.com/three-globe/example/img/earth-night.jpg")
+			.globeImageUrl("https://image-static.segmentfault.com/142/585/1425851602-60dd9cfe309dd")
 			.pointOfView({ lat: 35, lng: 105, altitude: 2 }) // aim at China centroid
+
+			.onGlobeClick(() => {
+				router.push("/dashboard");
+			})
 
 			.arcLabel((d) => `${d.airline}: ${d.srcIata} &#8594; ${d.dstIata}`)
 			.arcStartLat((d) => +d.srcAirport.lat)
@@ -159,5 +163,11 @@ export default function Earth() {
 		});
 	}, [router, globeVizRef]);
 
-	return <div id="globeViz" ref={globeVizRef} style={{ width: "100%", height: "100vh" }} />;
+	return (
+		<div
+			id="globeViz"
+			ref={globeVizRef}
+			style={{ width: "100%", height: "100vh" }}
+		/>
+	);
 }
