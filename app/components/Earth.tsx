@@ -74,11 +74,11 @@ export default function Earth() {
 			.arcDashGap(1)
 			.arcDashInitialGap(() => Math.random())
 			.arcDashAnimateTime(4000)
-			.arcColor((d) => [
+			.arcColor([
 				`rgba(0, 255, 0, ${OPACITY})`,
 				`rgba(255, 0, 0, ${OPACITY})`,
 			])
-      .arcStroke(0.3)
+			.arcStroke(0.3)
 			.arcsTransitionDuration(0)
 
 			.pointColor(() => "orange")
@@ -176,6 +176,22 @@ export default function Earth() {
 
 			myGlobe.pointsData(airports).arcsData(filteredRoutes);
 		});
+
+		// Add auto-rotation
+		let currentLng = 105;
+		const rotationSpeed = 0.05; // Adjust this value to control rotation speed
+
+		(function animate() {
+			if (globeVizRef.current) {
+				currentLng += rotationSpeed;
+				myGlobe.pointOfView({
+					lat: 35,
+					lng: currentLng,
+					altitude: 2
+				});
+				requestAnimationFrame(animate);
+			}
+		})();
 	}, [router, globeVizRef]);
 
 	return (
