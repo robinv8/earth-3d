@@ -1,239 +1,163 @@
-"use client";
-
 import { useEffect, useRef } from "react";
-import ThreeGlobe from "three-globe";
-import * as THREE from "three";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { useRouter } from "next/navigation";
+import Globe from "globe.gl";
+import { csvParseRows } from "d3-dsv";
+import indexBy from "index-array-by";
 
-// Major cities coordinates [name, lat, lng]
-const CITIES: [string, number, number][] = [
-	["New York", 40.7128, -74.006],
-	["London", 51.5074, -0.1278],
-	["Tokyo", 35.6762, 139.6503],
-	["Shanghai", 31.2304, 121.4737],
-	["Sydney", -33.8688, 151.2093],
-	["Dubai", 25.2048, 55.2708],
-	["Paris", 48.8566, 2.3522],
-	["Singapore", 1.3521, 103.8198],
-	["Beijing", 39.9042, 116.4074],
-	["Mumbai", 19.076, 72.8777],
-	["San Francisco", 37.7749, -122.4194],
-	["Hong Kong", 22.3193, 114.1694],
-];
+interface Route {
+	airline: string;
+	airlineId: string;
+	srcIata: string;
+	srcAirportId: string;
+	dstIata: string;
+	dstAirportId: string;
+	codeshare: string;
+	stops: string;
+	equipment: string;
+}
 
-// Array of colors for the arcs
-const ARC_COLORS = [
-	"#ff4444", // red
-	"#44ff44", // green
-	"#4444ff", // blue
-	"#ffff44", // yellow
-	"#ff44ff", // magenta
-	"#44ffff", // cyan
-	"#ff8844", // orange
-	"#44ff88", // turquoise
-	"#8844ff", // purple
-];
+interface Airport {
+	airportId: string;
+	name: string;
+	city: string;
+	country: string;
+	iata: string;
+	icao: string;
+	lat: string;
+	lng: string;
+	alt: string;
+	timezone: string;
+	dst: string;
+	tz: string;
+	type: string;
+	source: string;
+}
 
 export default function Earth() {
-	const containerRef = useRef<HTMLDivElement>(null);
 	const router = useRouter();
-	const arcIntervalRef = useRef<NodeJS.Timeout>();
+	const globeVizRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
-		if (!containerRef.current) return;
+		if (!globeVizRef.current) return;
+		const COUNTRY = "China";
+		const OPACITY = 0.22;
 
-		// Setup renderer
-		const renderer = new THREE.WebGLRenderer({ antialias: true });
-		renderer.setSize(window.innerWidth, window.innerHeight);
-		containerRef.current.appendChild(renderer.domElement);
+		const myGlobe = new Globe(globeVizRef.current)
 
-		// Setup scene
-		const scene = new THREE.Scene();
-		scene.background = new THREE.Color("#000000");
+			.globeImageUrl("//unpkg.com/three-globe/example/img/earth-night.jpg")
+			.pointOfView({ lat: 35, lng: 105, altitude: 2 }) // aim at China centroid
 
-		// Setup camera
-		const camera = new THREE.PerspectiveCamera(
-			75,
-			window.innerWidth / window.innerHeight,
-			0.1,
-			1000,
-		);
-		camera.position.z = 200;
-
-		// Setup controls
-		const controls = new OrbitControls(camera, renderer.domElement);
-		controls.enableDamping = true;
-		controls.dampingFactor = 0.05;
-		controls.rotateSpeed = 0.5;
-		controls.minDistance = 120;
-		controls.maxDistance = 300;
-
-		let lastClickTime = 0;
-		const doubleClickDelay = 300; // milliseconds
-		let isAnimating = false;
-
-		// Add click event listener
-		const handleClick = () => {
-			const currentTime = new Date().getTime();
-			const timeDiff = currentTime - lastClickTime;
-
-			if (timeDiff < doubleClickDelay && !isAnimating) {
-				isAnimating = true;
-
-				// 立即清除所有连线动画并停止定时器
-				Globe.arcsData([]);
-				if (arcIntervalRef.current) {
-					clearInterval(arcIntervalRef.current);
-					arcIntervalRef.current = undefined;
-				}
-
-				// 延迟执行缩放动画，给线条消失留出时间
-				setTimeout(() => {
-					// Store initial state
-					const initialScale = Globe.scale.x;
-					const initialPosition = camera.position.z;
-
-					// Animation duration in milliseconds
-					const duration = 1000;
-					const startTime = Date.now();
-
-					function zoomAnimation() {
-						const elapsed = Date.now() - startTime;
-						const progress = Math.min(elapsed / duration, 1);
-
-						// Ease out cubic
-						const easing = 1 - Math.pow(1 - progress, 3);
-
-						// Scale up the globe
-						const scale = initialScale + (2 - initialScale) * easing;
-						Globe.scale.set(scale, scale, scale);
-
-						// Zoom in
-						camera.position.z = initialPosition - 100 * easing;
-
-						// 渐变大气层颜色到透明
-						const atmosphereColor = new THREE.Color("#1da1f2");
-						atmosphereColor.multiplyScalar(1 - easing); // 降低颜色强度
-						Globe.atmosphereColor(`#${atmosphereColor.getHexString()}`);
-						Globe.atmosphereAltitude(0.2 * (1 - easing)); // 同时降低大气层高度
-
-						if (progress < 1) {
-							requestAnimationFrame(zoomAnimation);
-						} else {
-							// Animation complete, navigate to dashboard
-							router.push("/dashboard");
-						}
-					}
-
-					zoomAnimation();
-				}, 300); // 等待300毫秒让线条完全消失
-			}
-
-			lastClickTime = currentTime;
-		};
-
-		renderer.domElement.addEventListener("click", handleClick);
-
-		// Create globe
-		const Globe = new ThreeGlobe()
-			.globeImageUrl(
-				"https://image-static.segmentfault.com/142/585/1425851602-60dd9cfe309dd",
-			)
-			.bumpImageUrl(
-				"https://image-static.segmentfault.com/332/688/3326882554-675dbbedd1cd0",
-			)
-			.atmosphereColor("#1da1f2")
-			.atmosphereAltitude(0.2)
-			.arcColor((e: any) => e.color)
-			.arcAltitude(0.2)
-			.arcStroke(0.5)
-			.arcDashLength(0.5)
+			.arcLabel((d) => `${d.airline}: ${d.srcIata} &#8594; ${d.dstIata}`)
+			.arcStartLat((d) => +d.srcAirport.lat)
+			.arcStartLng((d) => +d.srcAirport.lng)
+			.arcEndLat((d) => +d.dstAirport.lat)
+			.arcEndLng((d) => +d.dstAirport.lng)
+			.arcDashLength(0.25)
 			.arcDashGap(1)
-			.arcDashInitialGap(1)
-			.arcDashAnimateTime(3000);
+			.arcDashInitialGap(() => Math.random())
+			.arcDashAnimateTime(4000)
+			.arcColor((d) => [
+				`rgba(0, 255, 0, ${OPACITY})`,
+				`rgba(255, 0, 0, ${OPACITY})`,
+			])
+			.arcsTransitionDuration(0)
 
-		scene.add(Globe);
+			.pointColor(() => "orange")
+			.pointAltitude(0)
+			.pointRadius(0.02)
+			.pointsMerge(true);
 
-		// Add lights
-		const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-		scene.add(ambientLight);
+		// load data
 
-		const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-		directionalLight.position.set(1, 1, 1);
-		scene.add(directionalLight);
+		const airportParse = ([
+			airportId,
+			name,
+			city,
+			country,
+			iata,
+			icao,
+			lat,
+			lng,
+			alt,
+			timezone,
+			dst,
+			tz,
+			type,
+			source,
+		]: string[]): Airport => ({
+			airportId,
+			name,
+			city,
+			country,
+			iata,
+			icao,
+			lat,
+			lng,
+			alt,
+			timezone,
+			dst,
+			tz,
+			type,
+			source,
+		});
+		const routeParse = ([
+			airline,
+			airlineId,
+			srcIata,
+			srcAirportId,
+			dstIata,
+			dstAirportId,
+			codeshare,
+			stops,
+			equipment,
+		]: string[]): Route => ({
+			airline,
+			airlineId,
+			srcIata,
+			srcAirportId,
+			dstIata,
+			dstAirportId,
+			codeshare,
+			stops,
+			equipment,
+		});
 
-		// Generate random arcs
-		function getRandomCity() {
-			return CITIES[Math.floor(Math.random() * CITIES.length)];
-		}
+		Promise.all([
+			fetch(
+				"https://raw.githubusercontent.com/jpatokal/openflights/master/data/airports.dat",
+			)
+				.then((res) => res.text())
+				.then((d) => csvParseRows(d, airportParse)),
+			fetch(
+				"https://raw.githubusercontent.com/jpatokal/openflights/master/data/routes.dat",
+			)
+				.then((res) => res.text())
+				.then((d) => csvParseRows(d, routeParse)),
+		]).then(([airports, routes]) => {
+			const byIata = indexBy(airports, "iata", false);
 
-		function getRandomColor() {
-			return ARC_COLORS[Math.floor(Math.random() * ARC_COLORS.length)];
-		}
+			const filteredRoutes = routes
+				.filter(
+					(d) =>
+						byIata.hasOwnProperty(d.srcIata) &&
+						byIata.hasOwnProperty(d.dstIata),
+				) // exclude unknown airports
+				.filter((d) => d.stops === "0") // non-stop flights only
+				.map((d) =>
+					Object.assign(d, {
+						srcAirport: byIata[d.srcIata],
+						dstAirport: byIata[d.dstIata],
+					}),
+				)
+				.filter(
+					(d) =>
+						d.srcAirport.country === COUNTRY &&
+						d.dstAirport.country !== COUNTRY,
+				); // international routes from country
 
-		function createNewArc() {
-			const startCity = getRandomCity();
-			let endCity = getRandomCity();
-			while (endCity === startCity) {
-				endCity = getRandomCity();
-			}
+			myGlobe.pointsData(airports).arcsData(filteredRoutes);
+		});
+	}, [router, globeVizRef]);
 
-			return {
-				startLat: startCity[1],
-				startLng: startCity[2],
-				endLat: endCity[1],
-				endLng: endCity[2],
-				color: getRandomColor(),
-			};
-		}
-
-		// Initialize arcs
-		const arcsData = Array(20).fill(0).map(createNewArc);
-		Globe.arcsData(arcsData);
-
-		// Periodically update arcs
-		arcIntervalRef.current = setInterval(() => {
-			const newArcsData = arcsData.map((arc) => {
-				if (Math.random() > 0.7) {
-					// 30% chance to replace arc
-					return createNewArc();
-				}
-				return arc;
-			});
-			Globe.arcsData(newArcsData);
-		}, 2000);
-
-		// Animation loop
-		function animate() {
-			requestAnimationFrame(animate);
-
-			// Rotate the globe
-			// @ts-ignore (three-globe types are not complete)
-			Globe.rotation.y += 0.001;
-
-			controls.update();
-			renderer.render(scene, camera);
-		}
-		animate();
-
-		// Handle window resize
-		function onWindowResize() {
-			camera.aspect = window.innerWidth / window.innerHeight;
-			camera.updateProjectionMatrix();
-			renderer.setSize(window.innerWidth, window.innerHeight);
-		}
-		window.addEventListener("resize", onWindowResize);
-
-		// Cleanup
-		return () => {
-			window.removeEventListener("resize", onWindowResize);
-			if (arcIntervalRef.current) {
-				clearInterval(arcIntervalRef.current);
-			}
-			renderer.dispose();
-		};
-	}, []);
-
-	return <div ref={containerRef} style={{ width: "100%", height: "100vh" }} />;
+	return <div id="globeViz" ref={globeVizRef} style={{ width: "100%", height: "100vh" }} />;
 }
