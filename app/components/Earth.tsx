@@ -177,21 +177,7 @@ export default function Earth() {
 			myGlobe.pointsData(airports).arcsData(filteredRoutes);
 		});
 
-		// Add auto-rotation
-		let currentLng = 105;
-		const rotationSpeed = 0.05; // Adjust this value to control rotation speed
 
-		(function animate() {
-			if (globeVizRef.current) {
-				currentLng += rotationSpeed;
-				myGlobe.pointOfView({
-					lat: 35,
-					lng: currentLng,
-					altitude: 2
-				});
-				requestAnimationFrame(animate);
-			}
-		})();
 	}, [router, globeVizRef]);
 
 	return (
